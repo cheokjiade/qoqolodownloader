@@ -11,3 +11,6 @@ qoqolodownloader/chromedriver.exe - Download this from https://googlechromelabs.
 You will also need Chrome
 
 The python project is managed with poetry and the dependencies are listed in pyproject.toml
+
+
+Or just download the latest release, extract it, update the config file and run. You will still need Chrome browser.
