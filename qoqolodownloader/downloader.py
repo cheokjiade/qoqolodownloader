@@ -2,6 +2,7 @@ import os
 import shutil
 import time
 import requests
+import traceback
 from datetime import datetime
 from dateutil import parser
 from selenium import webdriver
@@ -60,7 +61,7 @@ def download_image(image_url, file_path, selenium_driver, exif_datetime=None, ex
             exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized] = new_date
         if exif_comment is not None:
             exif_dict['Exif'][piexif.ExifIFD.UserComment] = piexif.helper.UserComment.dump(exif_comment, 'unicode')
-            exif_dict['Exif'][piexif.ImageIFD.ImageDescription] = piexif.helper.UserComment.dump(exif_comment, 'unicode')
+            exif_dict['0th'][piexif.ImageIFD.ImageDescription] = exif_comment
         exif_bytes = piexif.dump(exif_dict)
         piexif.remove(file_path)
         piexif.insert(exif_bytes, file_path)
@@ -112,7 +113,7 @@ if download_checkin:
                 photo_src = photos_elements[1].find_element(By.XPATH, './/img').get_attribute("src")
                 download_image(photo_src, os.path.join(checkinout_dir, sanitize_filepath(sign_out_date_text.strftime("%Y-%m-%d_%H%M%S") + "_signout.jpg")), driver, sign_out_date_text, "Check-out on " + sign_out_date_text.strftime("%Y:%m:%d %H:%M:%S"))
             except Exception as e:
-                print(e)
+                traceback.print_exc()
                 print("Likely there is no sign out photo for 1 of the days. If so ignore this error.")
             #close the popup
             driver.find_element(By.XPATH, "//button[text()='×']").click()
