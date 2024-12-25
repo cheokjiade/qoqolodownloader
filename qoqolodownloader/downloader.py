@@ -61,24 +61,25 @@ def download_image(image_url, file_path, selenium_driver, exif_datetime=None, ex
             exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized] = new_date
         if exif_comment is not None:
             exif_dict['Exif'][piexif.ExifIFD.UserComment] = piexif.helper.UserComment.dump(exif_comment, 'unicode')
-            exif_dict['0th'][piexif.ImageIFD.ImageDescription] = exif_comment
+            #exif_dict['0th'][piexif.ImageIFD.ImageDescription] = exif_comment
         exif_bytes = piexif.dump(exif_dict)
         piexif.remove(file_path)
         piexif.insert(exif_bytes, file_path)
         print("Downloaded " + file_path)
 
-
+def time_to_sleep():
+    time.sleep(int(configs.get("default_sleep_time").data))
 
 driver = webdriver.Chrome()  # Optional argument, if not specified will search path.
 driver.get(configs.get("page_login").data)
-time.sleep(1) # Let the user actually see something!
+time_to_sleep() # Let the user actually see something!
 #fill up login form
 login_name = driver.find_element(By.NAME, 'name')
 login_name.send_keys(username)
 login_password = driver.find_element(By.NAME, 'password')
 login_password.send_keys(password)
 login_password.submit()
-time.sleep(3) # Let the user actually see something!
+time_to_sleep() # Let the user actually see something!
 
 #to handle flow where there is more than 1 child in pcf
 try:
@@ -87,13 +88,13 @@ try:
 except Exception as e:
     print("Child does not need to be selected")
     #print(e)
-time.sleep(3)
+time_to_sleep()
 
 #handle sign in / out photos
 if download_checkin:
     for month in signin_months_to_download.split(','):
         driver.get(configs.get("page_checkin").data + month + "-" + signin_year_to_download)
-        time.sleep(3)
+        time_to_sleep()
         signin_table = driver.find_element(By.XPATH, configs.get("xpath_signin_table").data)
         signin_rows = signin_table.find_elements(By.XPATH, ".//tr")
         #iterate through all the rows of the table
@@ -104,7 +105,7 @@ if download_checkin:
             sign_in_date_text = parser.parse(signin_row_columns[1].text)
             sign_out_date_text = parser.parse(signin_row_columns[4].text)
             signin_row.find_element(By.XPATH, ".//button").click()
-            time.sleep(3)
+            time_to_sleep()
             #open popup
             photos_elements = driver.find_elements(By.XPATH, "//div[@class='form-group' and .//label[contains(text(), 'Photo')]]")
             try:
@@ -117,13 +118,13 @@ if download_checkin:
                 print("Likely there is no sign out photo for 1 of the days. If so ignore this error.")
             #close the popup
             driver.find_element(By.XPATH, "//button[text()='×']").click()
-            time.sleep(2)
+            time_to_sleep()
             #print(signin_row_columns[1].text)
 
 #process activities
 if download_activities:
     driver.get(configs.get("page_activities").data)
-    time.sleep(3)
+    time_to_sleep()
     html = driver.find_element(By.TAG_NAME, 'html')
     for i in range(int(configs.get("activities_scroll_times").data)):
         html.send_keys(Keys.END)
@@ -139,7 +140,7 @@ if download_activities:
             sanitized_post_title = sanitize_filepath(post_title).strip().replace("  ", " ").replace(" ", "_")[:30]
             post_description = activity_post.find_element(By.XPATH, ".//a[@class='view-album post-title']/following::p[1]").text
             post_images[0].click()
-            time.sleep(2)
+            time_to_sleep()
             #parse the album
             album_slides = driver.find_element(By.XPATH, "//div[@class='slides']")
             album_images = album_slides.find_elements(By.XPATH, ".//img[@class='slide-content']")
@@ -150,6 +151,7 @@ if download_activities:
                     photo_src = album_image.get_attribute("src")
                     download_image(photo_src, os.path.join(activites_dir, post_date.strftime("%Y-%m-%d_%H%M%S") + "_" + sanitized_post_title + "_" + f'{count+1:03}' + ".jpg"), driver, post_date, post_title + ": " + post_description)
                     count = count + 1
+            #if more then 1 photo in album, need to click all the items of the carousel because the photos lazy load
             elif len(album_images) > 1:
                 album_images = album_slides.find_elements(By.XPATH, ".//div[@class='slide ' and @data-index]")
                 album_images_indicator = driver.find_elements(By.XPATH, "//li[@data-index]")
@@ -164,7 +166,7 @@ if download_activities:
                         driver.find_element(By.XPATH, "//li[@data-index='" + str(count) + "']").click()
                         time.sleep(1)
             #close the photo carousel
-            driver.find_element(By.XPATH, configs.get("xpath_photo_carousel").data).click()
-            time.sleep(2)
+            driver.find_element(By.XPATH, configs.get("xpath_photo_carousel_close").data).click()
+            time_to_sleep()
 #driver.quit()
 os.system('pause')
