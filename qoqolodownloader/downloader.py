@@ -99,27 +99,26 @@ if download_checkin:
         signin_rows = signin_table.find_elements(By.XPATH, ".//tr")
         #iterate through all the rows of the table
         for signin_row in signin_rows:
-            signin_row_columns = signin_row.find_elements(By.XPATH, ".//td")
-            #find the sign in and out values
-            #print(signin_row_columns[1].text)
-            sign_in_date_text = parser.parse(signin_row_columns[1].text)
-            sign_out_date_text = parser.parse(signin_row_columns[4].text)
-            signin_row.find_element(By.XPATH, ".//button").click()
-            time_to_sleep()
-            #open popup
-            photos_elements = driver.find_elements(By.XPATH, "//div[@class='form-group' and .//label[contains(text(), 'Photo')]]")
             try:
+                signin_row_columns = signin_row.find_elements(By.XPATH, ".//td")
+                #find the sign in and out values
+                #print(signin_row_columns[1].text)
+                sign_in_date_text = parser.parse(signin_row_columns[1].text)
+                sign_out_date_text = parser.parse(signin_row_columns[4].text)
+                signin_row.find_element(By.XPATH, ".//button").click()
+                time_to_sleep()
+                #open popup
+                photos_elements = driver.find_elements(By.XPATH, "//div[@class='form-group' and .//label[contains(text(), 'Photo')]]")
                 photo_src = photos_elements[0].find_element(By.XPATH, './/img').get_attribute("src")
                 download_image(photo_src, os.path.join(checkinout_dir, sanitize_filepath(sign_in_date_text.strftime("%Y-%m-%d_%H%M%S") + "_signin.jpg")), driver, sign_in_date_text, "Check-in on " + sign_in_date_text.strftime("%Y:%m:%d %H:%M:%S"))
                 photo_src = photos_elements[1].find_element(By.XPATH, './/img').get_attribute("src")
                 download_image(photo_src, os.path.join(checkinout_dir, sanitize_filepath(sign_out_date_text.strftime("%Y-%m-%d_%H%M%S") + "_signout.jpg")), driver, sign_out_date_text, "Check-out on " + sign_out_date_text.strftime("%Y:%m:%d %H:%M:%S"))
+                #close the popup
+                driver.find_element(By.XPATH, "//button[text()='×']").click()
+                time_to_sleep()
             except Exception as e:
                 traceback.print_exc()
                 print("Likely there is no sign out photo for 1 of the days. If so ignore this error.")
-            #close the popup
-            driver.find_element(By.XPATH, "//button[text()='×']").click()
-            time_to_sleep()
-            #print(signin_row_columns[1].text)
 
 #process activities
 if download_activities:
