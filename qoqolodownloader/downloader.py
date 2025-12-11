@@ -5,7 +5,9 @@ import requests
 import traceback
 from datetime import datetime
 from dateutil import parser
+from dateutil.parser import ParserError
 from selenium import webdriver
+from selenium.common import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from pathvalidate import sanitize_filepath
@@ -28,12 +30,15 @@ download_activities = configs.get("download_activities").data == 'yes' if True e
 signin_months_to_download = configs.get("signin_months_to_download").data
 signin_year_to_download = configs.get("signin_year_to_download").data
 
+childname_dir = str(childname).replace(" ", "_").lower()
 checkinout_dir = "checkinout"
 activites_dir = "activities"
-if not os.path.exists(checkinout_dir):
-    os.makedirs(checkinout_dir)
-if not os.path.exists(activites_dir):
-    os.makedirs(activites_dir)
+full_checkinout_dir = os.path.join(childname_dir, signin_year_to_download, checkinout_dir)
+full_activites_dir = os.path.join(childname_dir, signin_year_to_download, activites_dir)
+if not os.path.exists(full_checkinout_dir):
+    os.makedirs(full_checkinout_dir)
+if not os.path.exists(full_activites_dir):
+    os.makedirs(full_activites_dir)
 
 def download_image(image_url, file_path, selenium_driver, exif_datetime=None, exif_comment=None):
     headers = {
@@ -95,7 +100,11 @@ if download_checkin:
     for month in signin_months_to_download.split(','):
         driver.get(configs.get("page_checkin").data + month + "-" + signin_year_to_download)
         time_to_sleep()
-        signin_table = driver.find_element(By.XPATH, configs.get("xpath_signin_table").data)
+        try:
+            signin_table = driver.find_element(By.XPATH, configs.get("xpath_signin_table").data)
+        except NoSuchElementException as e:
+            print(f"No sign in/out for the month {month}")
+            continue
         signin_rows = signin_table.find_elements(By.XPATH, ".//tr")
         #iterate through all the rows of the table
         for signin_row in signin_rows:
@@ -103,16 +112,27 @@ if download_checkin:
                 signin_row_columns = signin_row.find_elements(By.XPATH, ".//td")
                 #find the sign in and out values
                 #print(signin_row_columns[1].text)
-                sign_in_date_text = parser.parse(signin_row_columns[1].text)
-                sign_out_date_text = parser.parse(signin_row_columns[4].text)
+                is_signin = is_signout = True
+                try:
+                    sign_in_date_text = parser.parse(signin_row_columns[1].text)
+                except ParserError as e:
+                    is_signin = False
+                    print(f"Failed to parse signin date time: {e}")
+                try:
+                    sign_out_date_text = parser.parse(signin_row_columns[4].text)
+                except ParserError as e:
+                    is_signout = False
+                    print(f"Failed to parse signout date time: {e}")
                 signin_row.find_element(By.XPATH, ".//button").click()
                 time_to_sleep()
                 #open popup
                 photos_elements = driver.find_elements(By.XPATH, "//div[@class='form-group' and .//label[contains(text(), 'Photo')]]")
-                photo_src = photos_elements[0].find_element(By.XPATH, './/img').get_attribute("src")
-                download_image(photo_src, os.path.join(checkinout_dir, sanitize_filepath(sign_in_date_text.strftime("%Y-%m-%d_%H%M%S") + "_signin.jpg")), driver, sign_in_date_text, "Check-in on " + sign_in_date_text.strftime("%Y:%m:%d %H:%M:%S"))
-                photo_src = photos_elements[1].find_element(By.XPATH, './/img').get_attribute("src")
-                download_image(photo_src, os.path.join(checkinout_dir, sanitize_filepath(sign_out_date_text.strftime("%Y-%m-%d_%H%M%S") + "_signout.jpg")), driver, sign_out_date_text, "Check-out on " + sign_out_date_text.strftime("%Y:%m:%d %H:%M:%S"))
+                if is_signin:
+                    photo_src = photos_elements[0].find_element(By.XPATH, './/img').get_attribute("src")
+                    download_image(photo_src, os.path.join(checkinout_dir, sanitize_filepath(sign_in_date_text.strftime("%Y-%m-%d_%H%M%S") + "_signin.jpg")), driver, sign_in_date_text, "Check-in on " + sign_in_date_text.strftime("%Y:%m:%d %H:%M:%S"))
+                if is_signout:
+                    photo_src = photos_elements[1].find_element(By.XPATH, './/img').get_attribute("src")
+                    download_image(photo_src, os.path.join(checkinout_dir, sanitize_filepath(sign_out_date_text.strftime("%Y-%m-%d_%H%M%S") + "_signout.jpg")), driver, sign_out_date_text, "Check-out on " + sign_out_date_text.strftime("%Y:%m:%d %H:%M:%S"))
                 #close the popup
                 driver.find_element(By.XPATH, "//button[text()='×']").click()
                 time_to_sleep()
