@@ -10,6 +10,8 @@ from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from pathvalidate import sanitize_filepath
 from jproperties import Properties
 import piexif
@@ -129,13 +131,15 @@ if download_checkin:
                 photos_elements = driver.find_elements(By.XPATH, "//div[@class='form-group' and .//label[contains(text(), 'Photo')]]")
                 if is_signin:
                     photo_src = photos_elements[0].find_element(By.XPATH, './/img').get_attribute("src")
-                    download_image(photo_src, os.path.join(checkinout_dir, sanitize_filepath(sign_in_date_text.strftime("%Y-%m-%d_%H%M%S") + "_signin.jpg")), driver, sign_in_date_text, "Check-in on " + sign_in_date_text.strftime("%Y:%m:%d %H:%M:%S"))
+                    download_image(photo_src, os.path.join(full_checkinout_dir, sanitize_filepath(sign_in_date_text.strftime("%Y-%m-%d_%H%M%S") + "_signin.jpg")), driver, sign_in_date_text, "Check-in on " + sign_in_date_text.strftime("%Y:%m:%d %H:%M:%S"))
                 if is_signout:
                     photo_src = photos_elements[1].find_element(By.XPATH, './/img').get_attribute("src")
-                    download_image(photo_src, os.path.join(checkinout_dir, sanitize_filepath(sign_out_date_text.strftime("%Y-%m-%d_%H%M%S") + "_signout.jpg")), driver, sign_out_date_text, "Check-out on " + sign_out_date_text.strftime("%Y:%m:%d %H:%M:%S"))
+                    download_image(photo_src, os.path.join(full_checkinout_dir, sanitize_filepath(sign_out_date_text.strftime("%Y-%m-%d_%H%M%S") + "_signout.jpg")), driver, sign_out_date_text, "Check-out on " + sign_out_date_text.strftime("%Y:%m:%d %H:%M:%S"))
                 #close the popup
                 driver.find_element(By.XPATH, "//button[text()='×']").click()
-                time_to_sleep()
+                WebDriverWait(driver, 10).until(
+                    EC.invisibility_of_element_located((By.XPATH, "//div[contains(@class,'view-signin-modal') and contains(@class,'in')]"))
+                )
             except Exception as e:
                 traceback.print_exc()
                 print("Likely there is no sign out photo for 1 of the days. If so ignore this error.")
@@ -168,7 +172,7 @@ if download_activities:
                 count = 0
                 for album_image in album_images:
                     photo_src = album_image.get_attribute("src")
-                    download_image(photo_src, os.path.join(activites_dir, post_date.strftime("%Y-%m-%d_%H%M%S") + "_" + sanitized_post_title + "_" + f'{count+1:03}' + ".jpg"), driver, post_date, post_title + ": " + post_description)
+                    download_image(photo_src, os.path.join(full_activites_dir, post_date.strftime("%Y-%m-%d_%H%M%S") + "_" + sanitized_post_title + "_" + f'{count+1:03}' + ".jpg"), driver, post_date, post_title + ": " + post_description)
                     count = count + 1
             #if more then 1 photo in album, need to click all the items of the carousel because the photos lazy load
             elif len(album_images) > 1:
@@ -179,7 +183,7 @@ if download_activities:
                     album_image = driver.find_elements(By.XPATH, "//div[@class='slide ' and @data-index='" + str(count) + "']/img")
                     if len(album_image) == 1:
                         photo_src = album_image[0].get_attribute("src")
-                        download_image(photo_src, os.path.join(activites_dir, post_date.strftime("%Y-%m-%d_%H%M%S") + "_" + sanitized_post_title + "_" + f'{count+1:03}' + ".jpg"), driver, post_date, post_title + ": " + post_description)
+                        download_image(photo_src, os.path.join(full_activites_dir, post_date.strftime("%Y-%m-%d_%H%M%S") + "_" + sanitized_post_title + "_" + f'{count+1:03}' + ".jpg"), driver, post_date, post_title + ": " + post_description)
                     count = count + 1
                     if count < len(album_images_indicator):
                         driver.find_element(By.XPATH, "//li[@data-index='" + str(count) + "']").click()
