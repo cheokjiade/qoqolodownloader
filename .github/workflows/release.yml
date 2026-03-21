@@ -1,0 +1,123 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            cli-artifact: dist/downloader.exe
+            gui-artifact: dist/qoqolodownloader-gui.exe
+            cli-name: downloader-windows.exe
+            gui-name: qoqolodownloader-gui-windows.exe
+          - os: ubuntu-latest
+            cli-artifact: dist/downloader
+            gui-artifact: dist/qoqolodownloader-gui
+            cli-name: downloader-linux
+            gui-name: qoqolodownloader-gui-linux
+          - os: macos-latest
+            cli-artifact: dist/downloader
+            gui-artifact: dist/qoqolodownloader-gui
+            cli-name: downloader-macos
+            gui-name: qoqolodownloader-gui-macos
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y python3-tk
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Build CLI executable
+        run: poetry run build
+
+      - name: Build GUI executable
+        run: poetry run build-gui
+
+      - name: Rename artifacts for platform
+        run: |
+          mv "${{ matrix.cli-artifact }}" "dist/${{ matrix.cli-name }}"
+          mv "${{ matrix.gui-artifact }}" "dist/${{ matrix.gui-name }}"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.os }}
+          path: |
+            dist/${{ matrix.cli-name }}
+            dist/${{ matrix.gui-name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          append_body: true
+          body: |
+            ---
+
+            ## Requirements
+
+            - **Google Chrome** (or Chromium) must be installed on your system. The application uses Selenium to automate the browser and will not work without it.
+
+            ## Platform support
+
+            | Platform | Status |
+            |---|---|
+            | Windows | Supported |
+            | Linux | Built but untested |
+            | macOS | Built but untested |
+
+            ## macOS users
+
+            The macOS binary is unsigned. macOS Gatekeeper will block it on first run. To allow it:
+
+            - **Option A:** Right-click the file > Open > Open
+            - **Option B:** Run in terminal: `xattr -d com.apple.quarantine ./downloader-macos`
+          files: |
+            artifacts/downloader-windows.exe
+            artifacts/qoqolodownloader-gui-windows.exe
+            artifacts/downloader-linux
+            artifacts/qoqolodownloader-gui-linux
+            artifacts/downloader-macos
+            artifacts/qoqolodownloader-gui-macos
+            qoqolodownloader/config.properties
