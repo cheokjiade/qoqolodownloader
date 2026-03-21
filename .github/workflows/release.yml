@@ -47,6 +47,12 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
+      - name: Set version from tag
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          poetry version "$VERSION"
+        shell: bash
+
       - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y python3-tk
