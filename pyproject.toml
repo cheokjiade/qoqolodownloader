@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qoqolodownloader"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["jiade <jiade@jiade.info>"]
 readme = "README.md"
@@ -14,12 +14,16 @@ jproperties = "^2.1.2"
 selenium = "^4.27.1"
 python-dateutil = "^2.9.0.post0"
 pyinstaller = "^6.11.1"
+customtkinter = "^5.2.0"
 
+
+[tool.poetry.group.dev.dependencies]
+pyinstaller = "^6.17.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-
 [tool.poetry.scripts]
 build = "qoqolodownloader.pyinstaller:install"
+build-gui = "qoqolodownloader.pyinstaller:install_gui"
