@@ -121,6 +121,10 @@ class QoqoloDownloaderApp(ctk.CTk):
         self.entries["childname"] = ctk.CTkEntry(child_frame, placeholder_text="CHILD NAME")
         self.entries["childname"].grid(row=0, column=1, sticky="ew", pady=2)
 
+        hint = ctk.CTkLabel(child_frame, text="Enter the full name in CAPS, exactly as it appears on the Qoqolo website",
+                            font=ctk.CTkFont(size=11), text_color="gray")
+        hint.grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 2))
+
         row += 1
         return row
 
@@ -152,11 +156,13 @@ class QoqoloDownloaderApp(ctk.CTk):
         fields_frame.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(fields_frame, text="Months:").grid(row=0, column=0, sticky="w", padx=(0, 10), pady=2)
-        self.entries["signin_months_to_download"] = ctk.CTkEntry(fields_frame, placeholder_text="1,2,3,4,5,6,7,8,9,10,11,12")
+        self.entries["signin_months_to_download"] = ctk.CTkEntry(fields_frame)
+        self.entries["signin_months_to_download"].insert(0, "1,2,3,4,5,6,7,8,9,10,11,12")
         self.entries["signin_months_to_download"].grid(row=0, column=1, sticky="ew", pady=2)
 
         ctk.CTkLabel(fields_frame, text="Year:").grid(row=1, column=0, sticky="w", padx=(0, 10), pady=2)
-        self.entries["signin_year_to_download"] = ctk.CTkEntry(fields_frame, placeholder_text="2025")
+        self.entries["signin_year_to_download"] = ctk.CTkEntry(fields_frame)
+        self.entries["signin_year_to_download"].insert(0, str(datetime.now().year))
         self.entries["signin_year_to_download"].grid(row=1, column=1, sticky="ew", pady=2)
 
         # Scroll times and sleep time on same row
@@ -165,14 +171,20 @@ class QoqoloDownloaderApp(ctk.CTk):
         tuning_frame.grid_columnconfigure((1, 3), weight=1)
 
         ctk.CTkLabel(tuning_frame, text="Scroll Times:").grid(row=0, column=0, sticky="w", padx=(0, 5), pady=2)
-        self.entries["activities_scroll_times"] = ctk.CTkEntry(tuning_frame, width=60, placeholder_text="7")
+        self.entries["activities_scroll_times"] = ctk.CTkEntry(tuning_frame, width=60)
+        self.entries["activities_scroll_times"].insert(0, "7")
         self.entries["activities_scroll_times"].grid(row=0, column=1, sticky="w", pady=2)
 
         ctk.CTkLabel(tuning_frame, text="Sleep Time (s):").grid(row=0, column=2, sticky="w", padx=(20, 5), pady=2)
-        self.entries["default_sleep_time"] = ctk.CTkEntry(tuning_frame, width=60, placeholder_text="3")
+        self.entries["default_sleep_time"] = ctk.CTkEntry(tuning_frame, width=60)
+        self.entries["default_sleep_time"].insert(0, "3")
         self.entries["default_sleep_time"].grid(row=0, column=3, sticky="w", pady=2)
 
-        row += 3
+        tuning_hint = ctk.CTkLabel(parent, text="Leave defaults unless downloads are failing. Increase Sleep Time if pages load slowly, Scroll Times for older activity posts.",
+                                   font=ctk.CTkFont(size=11), text_color="gray", wraplength=650, justify="left")
+        tuning_hint.grid(row=row + 3, column=0, sticky="w", pady=(0, 5))
+
+        row += 4
         return row
 
     def _build_output_section(self, parent, row):
@@ -211,6 +223,15 @@ class QoqoloDownloaderApp(ctk.CTk):
         self.advanced_frame.grid_columnconfigure(1, weight=1)
         self.advanced_frame.grid_remove()  # hidden by default
 
+        advanced_defaults = {
+            "page_login": "https://pcfsparkletots.qoqolo.com/",
+            "page_checkin": "https://pcfsparkletots.qoqolo.com/cos/o.x?c=/ca4q_pep/check_in&func=recent&selectDate=",
+            "page_activities": "https://pcfsparkletots.qoqolo.com/cos/o.x?c=/ca4q_pep/classspace",
+            "xpath_signin_table": "//tbody",
+            "xpath_activity_posts": ".//div[@class='panel panel-default infinite-item post ']",
+            "xpath_activity_post_images": ".//a[@class='bi-gallery-item' and @data-type='Image' and @src and @data-index='0']",
+            "xpath_photo_carousel_close": "//a[@class='close']",
+        }
         advanced_fields = [
             ("page_login", "Login URL:"),
             ("page_checkin", "Check-in URL:"),
@@ -225,6 +246,7 @@ class QoqoloDownloaderApp(ctk.CTk):
                 row=i, column=0, sticky="w", padx=(10, 10), pady=2
             )
             self.entries[key] = ctk.CTkEntry(self.advanced_frame)
+            self.entries[key].insert(0, advanced_defaults.get(key, ""))
             self.entries[key].grid(row=i, column=1, sticky="ew", padx=(0, 10), pady=2)
 
         row += 1
@@ -233,7 +255,7 @@ class QoqoloDownloaderApp(ctk.CTk):
     def _build_action_buttons(self, parent, row):
         btn_frame = ctk.CTkFrame(parent, fg_color="transparent")
         btn_frame.grid(row=row, column=0, sticky="ew", pady=(10, 5))
-        btn_frame.grid_columnconfigure((0, 1, 2), weight=1)
+        btn_frame.grid_columnconfigure((0, 1), weight=1)
 
         self.start_btn = ctk.CTkButton(btn_frame, text="Start Download",
                                        fg_color="green", hover_color="darkgreen",
@@ -244,9 +266,6 @@ class QoqoloDownloaderApp(ctk.CTk):
                                         fg_color="red", hover_color="darkred",
                                         state="disabled", command=self._cancel_download)
         self.cancel_btn.grid(row=0, column=1, padx=5, sticky="ew")
-
-        self.save_btn = ctk.CTkButton(btn_frame, text="Save Config", command=self._save_config)
-        self.save_btn.grid(row=0, column=2, padx=5, sticky="ew")
 
         row += 1
         return row
@@ -407,11 +426,13 @@ class QoqoloDownloaderApp(ctk.CTk):
                 self._log("Error: Months must be comma-separated numbers (e.g. 1,2,3).")
                 return
 
+        # Save config before starting
+        self._save_config()
+
         # Reset UI state
         self.cancel_event.clear()
         self.start_btn.configure(state="disabled")
         self.cancel_btn.configure(state="normal")
-        self.save_btn.configure(state="disabled")
         self.progress_bar.set(0)
         self.progress_label.configure(text="0%")
 
@@ -483,7 +504,6 @@ class QoqoloDownloaderApp(ctk.CTk):
         """Re-enable UI after download completes or fails."""
         self.start_btn.configure(state="normal")
         self.cancel_btn.configure(state="disabled")
-        self.save_btn.configure(state="normal")
 
     def _cancel_download(self):
         """Set cancel event. Download loops check this between iterations."""
