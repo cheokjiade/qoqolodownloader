@@ -59,14 +59,18 @@ jobs:
 
       - name: Install dependencies
         run: poetry install
+        shell: bash
 
       - name: Build CLI executable
         run: poetry run build
+        shell: bash
 
       - name: Build GUI executable
         run: poetry run build-gui
+        shell: bash
 
       - name: Rename artifacts for platform
+        shell: bash
         run: |
           mv "${{ matrix.cli-artifact }}" "dist/${{ matrix.cli-name }}"
           mv "${{ matrix.gui-artifact }}" "dist/${{ matrix.gui-name }}"
