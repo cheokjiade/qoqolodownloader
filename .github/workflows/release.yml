@@ -105,6 +105,10 @@ jobs:
           body: |
             ---
 
+            ## Getting started
+
+            **Windows users:** Download **`qoqolodownloader-gui-windows.exe`** — this is the recommended option. Just run it and fill in your details.
+
             ## Requirements
 
             - **Google Chrome** (or Chromium) must be installed on your system. The application uses Selenium to automate the browser and will not work without it.
