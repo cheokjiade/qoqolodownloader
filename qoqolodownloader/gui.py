@@ -121,6 +121,10 @@ class QoqoloDownloaderApp(ctk.CTk):
         self.entries["childname"] = ctk.CTkEntry(child_frame, placeholder_text="CHILD NAME")
         self.entries["childname"].grid(row=0, column=1, sticky="ew", pady=2)
 
+        hint = ctk.CTkLabel(child_frame, text="Enter the full name in CAPS, exactly as it appears on the Qoqolo website",
+                            font=ctk.CTkFont(size=11), text_color="gray")
+        hint.grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 2))
+
         row += 1
         return row
 
@@ -165,14 +169,20 @@ class QoqoloDownloaderApp(ctk.CTk):
         tuning_frame.grid_columnconfigure((1, 3), weight=1)
 
         ctk.CTkLabel(tuning_frame, text="Scroll Times:").grid(row=0, column=0, sticky="w", padx=(0, 5), pady=2)
-        self.entries["activities_scroll_times"] = ctk.CTkEntry(tuning_frame, width=60, placeholder_text="7")
+        self.entries["activities_scroll_times"] = ctk.CTkEntry(tuning_frame, width=60)
+        self.entries["activities_scroll_times"].insert(0, "7")
         self.entries["activities_scroll_times"].grid(row=0, column=1, sticky="w", pady=2)
 
         ctk.CTkLabel(tuning_frame, text="Sleep Time (s):").grid(row=0, column=2, sticky="w", padx=(20, 5), pady=2)
-        self.entries["default_sleep_time"] = ctk.CTkEntry(tuning_frame, width=60, placeholder_text="3")
+        self.entries["default_sleep_time"] = ctk.CTkEntry(tuning_frame, width=60)
+        self.entries["default_sleep_time"].insert(0, "3")
         self.entries["default_sleep_time"].grid(row=0, column=3, sticky="w", pady=2)
 
-        row += 3
+        tuning_hint = ctk.CTkLabel(parent, text="Leave defaults unless downloads are failing. Increase Sleep Time if pages load slowly, Scroll Times for older activity posts.",
+                                   font=ctk.CTkFont(size=11), text_color="gray", wraplength=650, justify="left")
+        tuning_hint.grid(row=row + 3, column=0, sticky="w", pady=(0, 5))
+
+        row += 4
         return row
 
     def _build_output_section(self, parent, row):

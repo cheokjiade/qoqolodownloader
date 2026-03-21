@@ -12,7 +12,7 @@ def install():
         path_to_main,
         '--onefile',
         '--console',
-        # other pyinstaller options...
+        '--collect-submodules', 'selenium',
     ])
 
 
@@ -29,4 +29,5 @@ def install_gui():
         '--hidden-import', 'qoqolodownloader.downloader',
         '--collect-data', 'customtkinter',
         '--collect-all', 'qoqolodownloader',
+        '--collect-submodules', 'selenium',
     ])
